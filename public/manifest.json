@@ -8,14 +8,14 @@
   "version": {
     "major": 0,
     "minor": 0,
-    "patch": 1
+    "patch": 2
   },
   "requestNative": false,
   "repoUrl": "https://github.com/bianyeyu/word-count-develop",
   "requiredScopes": [
     {
       "type": "All",
-      "level": "Read"
+      "level": "ReadCreateModify"
     }
   ]
 }
