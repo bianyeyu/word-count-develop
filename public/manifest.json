@@ -11,6 +11,7 @@
     "patch": 1
   },
   "requestNative": false,
+  "repoUrl": "https://github.com/bianyeyu/word-count-develop",
   "requiredScopes": [
     {
       "type": "All",
