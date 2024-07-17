@@ -2,7 +2,7 @@
   "author": "Nova",
   "name": "word-count",
   "description": "current",
-  "enableOnMobile": true,
+  "enableOnMobile": false,
   "id": "Nova-td683u0",
   "manifestVersion": 1,
   "version": {
@@ -10,6 +10,7 @@
     "minor": 0,
     "patch": 2
   },
+  "icon": "https://example.com/path/to/your/icon.png",
   "requestNative": false,
   "repoUrl": "https://github.com/bianyeyu/word-count-develop",
   "requiredScopes": [
