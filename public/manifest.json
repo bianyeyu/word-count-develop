@@ -7,8 +7,8 @@
   "manifestVersion": 1,
   "version": {
     "major": 0,
-    "minor": 1,
-    "patch": 2
+    "minor": 4,
+    "patch": 0
   },
   "icon": "https://example.com/path/to/your/icon.png",
   "requestNative": false,
@@ -16,7 +16,7 @@
   "requiredScopes": [
     {
       "type": "All",
-      "level": "ReadCreateModify"
+      "level": "ReadCreateModifyDelete"
     }
   ]
 }

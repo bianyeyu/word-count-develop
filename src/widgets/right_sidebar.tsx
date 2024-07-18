@@ -1,12 +1,16 @@
-import { usePlugin, renderWidget, useTracker, Rem } from '@remnote/plugin-sdk';
-import React from 'react';
+import React from "react";
+import {
+  renderWidget,
+  usePlugin,
+  useTracker,
+  Rem,
+} from "@remnote/plugin-sdk";
 
 function countCharacters(text: string): number {
-    // Corrected Logic: Only count non-space characters for English
-    const englishChars = text.replace(/[\u4e00-\u9fa5\s]/g, '').length; // Exclude Chinese characters and spaces
-    const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0; 
-    return englishChars + chineseChars;
-  }
+  const englishChars = text.replace(/[\u4e00-\u9fa5\s]/g, '').length;
+  const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0; 
+  return englishChars + chineseChars;
+}
 
 function countEnglishWords(text: string): number {
   const words = text
@@ -16,65 +20,85 @@ function countEnglishWords(text: string): number {
   return words.length;
 }
 
-async function countAllInRem(
-  plugin: any,
-  rem: Rem
-): Promise<{ characters: number; words: number; currentRemCharacters: number; currentRemWords: number }> {
+async function getRemCounts(plugin: any, rem: Rem, countAll: boolean): Promise<{remId: string, text: string, characters: number, words: number}> {
   let characters = 0;
   let words = 0;
-  let currentRemCharacters = 0; // Count for the current Rem
-  let currentRemWords = 0; // Count for the current Rem
 
-  if (rem.text) {
-    const textString = await plugin.richText.toString(rem.text);
-    currentRemCharacters = countCharacters(textString); // Count for the current Rem
-    currentRemWords = countEnglishWords(textString); // Count for the current Rem
-    characters += currentRemCharacters;
-    words += currentRemWords;
-  }
+  async function countRemAndChildren(r: Rem) {
+    const text = await plugin.richText.toString(r.text);
+    characters += countCharacters(text);
+    words += countEnglishWords(text);
 
-  if (rem.children) {
-    const children = await plugin.rem.findMany(rem.children);
-    if (children) {
-      for (const childRem of children) {
-        const childCounts = await countAllInRem(plugin, childRem);
-        characters += childCounts.characters;
-        words += childCounts.words;
+    if (countAll && r.children) {
+      const children = await plugin.rem.findMany(r.children);
+      if (children) {
+        for (const child of children) {
+          await countRemAndChildren(child);
+        }
       }
     }
   }
 
-  return { characters, words, currentRemCharacters, currentRemWords };
+  await countRemAndChildren(rem);
+
+  return {
+    remId: rem._id,
+    text: await plugin.richText.toString(rem.text),
+    characters,
+    words,
+  };
 }
 
-export const WordCountWidget = () => {
+function RightSidebar() {
   const plugin = usePlugin();
-
-  const [counts, setCounts] = React.useState<{
-    characters: number;
-    words: number;
-    currentRemCharacters: number;
-    currentRemWords: number;
-  }>({ characters: 0, words: 0, currentRemCharacters: 0, currentRemWords: 0 });
+  const [taggedRems, setTaggedRems] = React.useState<Array<{remId: string, text: string, characters: number, words: number, countAll: boolean}>>([]);
 
   useTracker(async (reactivePlugin) => {
-    const focusedRem = await reactivePlugin.focus.getFocusedRem();
-    if (focusedRem) {
-      setCounts(await countAllInRem(reactivePlugin, focusedRem));
+    console.log("useTracker running");
+    const wordCountTag = await reactivePlugin.rem.findByName(["#WordCount"], null);
+    const wordCountAllTag = await reactivePlugin.rem.findByName(["#WordCountAll"], null);
+
+    const taggedRemIds = new Set<string>();
+    const countAllRemIds = new Set<string>();
+
+    if (wordCountTag) {
+      const taggedRems = await wordCountTag.taggedRem();
+      taggedRems.forEach(rem => taggedRemIds.add(rem._id));
+    }
+    if (wordCountAllTag) {
+      const taggedAllRems = await wordCountAllTag.taggedRem();
+      taggedAllRems.forEach(rem => {
+        taggedRemIds.add(rem._id);
+        countAllRemIds.add(rem._id);
+      });
+    }
+
+    const rems = await reactivePlugin.rem.findMany(Array.from(taggedRemIds));
+    if (rems) {
+      const counts = await Promise.all(rems.map(rem => getRemCounts(reactivePlugin, rem, countAllRemIds.has(rem._id))));
+      setTaggedRems(counts.map(count => ({...count, countAll: countAllRemIds.has(count.remId)})));
     } else {
-      setCounts({ characters: 0, words: 0, currentRemCharacters: 0, currentRemWords: 0 });
+      setTaggedRems([]);
     }
   });
 
   return (
-    <div className="p-2 m-2 rounded-lg rn-clr-background-light-positive rn-clr-content-positive">
-      <h1 className="text-xl">Word & Character Count</h1>
-      <div>Current Rem: {counts.currentRemWords} words</div>
-      <div>Current Rem: {counts.currentRemCharacters} characters</div>
-      <div>Total (including sub-rems): {counts.words} words</div>
-      <div>Total (including sub-rems): {counts.characters} characters</div>
+    <div className="h-full overflow-y-auto rn-clr-background-primary">
+      <h1 className="text-xl mb-4 rn-clr-content-primary">Word & Character Count</h1>
+      {taggedRems.length > 0 ? (
+        taggedRems.map(({remId, text, characters, words, countAll}) => (
+          <div key={remId} className="mb-4 p-2 border rounded rn-clr-background-secondary">
+            <h2 className="text-lg font-semibold mb-2 rn-clr-content-primary">{text}</h2>
+            <p className="rn-clr-content-secondary">Type: {countAll ? "Including Sub-Rems" : "Current Rem Only"}</p>
+            <p className="rn-clr-content-secondary">Words: {words}</p>
+            <p className="rn-clr-content-secondary">Characters: {characters}</p>
+          </div>
+        ))
+      ) : (
+        <p className="rn-clr-content-primary">No Rems tagged with #WordCount or #WordCountAll.</p>
+      )}
     </div>
   );
-};
+}
 
-renderWidget(WordCountWidget);
+renderWidget(RightSidebar);
