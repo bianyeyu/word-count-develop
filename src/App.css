@@ -1,1 +1,10 @@
 /* Add your plugin styles here. */
+/* ... other styles ... */
+
+.close-button { /* Give your button a descriptive class name */
+    @apply text-gray-500 hover:text-red-500 rounded-full px-2 py-1 hover:bg-gray-200; 
+  }
+  
+  .close-button svg {
+    @apply h-4 w-4; 
+  }

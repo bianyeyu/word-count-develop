@@ -1,14 +1,14 @@
 {
   "author": "Nova",
   "name": "word-count",
-  "description": "current",
+  "description": "Add a sidebar for word count counting",
   "enableOnMobile": false,
   "id": "Nova-td683u0",
   "manifestVersion": 1,
   "version": {
     "major": 0,
-    "minor": 4,
-    "patch": 0
+    "minor": 5,
+    "patch": 1
   },
   "icon": "https://example.com/path/to/your/icon.png",
   "requestNative": false,

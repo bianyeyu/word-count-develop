@@ -81,14 +81,48 @@ function RightSidebar() {
       setTaggedRems([]);
     }
   });
+  // These functions should be defined inside RightSidebar
+  const handleRemClick = async (remId: string) => {
+    const rem = await plugin.rem.findOne(remId);
+    if (rem) {
+      await plugin.window.openRem(rem); 
+    }
+  };
+  const handleRemoveTag = async (remId: string, countAll: boolean) => {
+    const rem = await plugin.rem.findOne(remId);
+    if (rem) {
+      const tagToRemove = countAll ? "#WordCountAll" : "#WordCount";
+      const tagRem = await plugin.rem.findByName([tagToRemove], null); // Find the Rem for the tag
+      if (tagRem) {
+        await rem.removeTag(tagRem._id); // Pass the tag Rem's ID to removeTag
+        setTaggedRems(taggedRems.filter(r => r.remId !== remId));
+      } else {
+        console.error(`Could not find tag Rem for: ${tagToRemove}`);
+        // Consider adding a toast notification to the user here if the tag is not found
+      }
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto rn-clr-background-primary">
       <h1 className="text-xl mb-4 rn-clr-content-primary">Word & Character Count</h1>
       {taggedRems.length > 0 ? (
         taggedRems.map(({remId, text, characters, words, countAll}) => (
-          <div key={remId} className="mb-4 p-2 border rounded rn-clr-background-secondary">
-            <h2 className="text-lg font-semibold mb-2 rn-clr-content-primary">{text}</h2>
+          <div key={remId} className="mb-2 p-1 border rounded rn-clr-background-secondary">
+            <div className="flex justify-between items-center"> 
+              <h2
+                className="text-lg font-semibold mb-2 rn-clr-content-primary cursor-pointer"
+                onClick={() => handleRemClick(remId)} 
+              >
+                {text}
+              </h2>
+              <button
+                className="text-gray-500 hover:text-red-500"
+                onClick={() => handleRemoveTag(remId, countAll)}
+              >
+                We lost count!
+              </button>
+            </div>
             <p className="rn-clr-content-secondary">Type: {countAll ? "Including Sub-Rems" : "Current Rem Only"}</p>
             <p className="rn-clr-content-secondary">Words: {words}</p>
             <p className="rn-clr-content-secondary">Characters: {characters}</p>
@@ -100,5 +134,6 @@ function RightSidebar() {
     </div>
   );
 }
+
 
 renderWidget(RightSidebar);
