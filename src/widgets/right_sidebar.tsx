@@ -55,18 +55,20 @@ function RightSidebar() {
 
   useTracker(async (reactivePlugin) => {
     console.log("useTracker running");
-    const wordCountTag = await reactivePlugin.rem.findByName(["#WordCount"], null);
-    const wordCountAllTag = await reactivePlugin.rem.findByName(["#WordCountAll"], null);
+    
+    // Get powerups instead of tags
+    const wordCountPowerup = await reactivePlugin.powerup.getPowerupByCode('word_count');
+    const wordCountAllPowerup = await reactivePlugin.powerup.getPowerupByCode('word_count_all');
 
     const taggedRemIds = new Set<string>();
     const countAllRemIds = new Set<string>();
 
-    if (wordCountTag) {
-      const taggedRems = await wordCountTag.taggedRem();
+    if (wordCountPowerup) {
+      const taggedRems = await wordCountPowerup.taggedRem();
       taggedRems.forEach(rem => taggedRemIds.add(rem._id));
     }
-    if (wordCountAllTag) {
-      const taggedAllRems = await wordCountAllTag.taggedRem();
+    if (wordCountAllPowerup) {
+      const taggedAllRems = await wordCountAllPowerup.taggedRem();
       taggedAllRems.forEach(rem => {
         taggedRemIds.add(rem._id);
         countAllRemIds.add(rem._id);
@@ -81,25 +83,20 @@ function RightSidebar() {
       setTaggedRems([]);
     }
   });
-  // These functions should be defined inside RightSidebar
+
   const handleRemClick = async (remId: string) => {
     const rem = await plugin.rem.findOne(remId);
     if (rem) {
-      await plugin.window.openRem(rem); 
+      await plugin.window.openRem(rem);
     }
   };
+
   const handleRemoveTag = async (remId: string, countAll: boolean) => {
     const rem = await plugin.rem.findOne(remId);
     if (rem) {
-      const tagToRemove = countAll ? "#WordCountAll" : "#WordCount";
-      const tagRem = await plugin.rem.findByName([tagToRemove], null); // Find the Rem for the tag
-      if (tagRem) {
-        await rem.removeTag(tagRem._id); // Pass the tag Rem's ID to removeTag
-        setTaggedRems(taggedRems.filter(r => r.remId !== remId));
-      } else {
-        console.error(`Could not find tag Rem for: ${tagToRemove}`);
-        // Consider adding a toast notification to the user here if the tag is not found
-      }
+      const powerupCode = countAll ? 'word_count_all' : 'word_count';
+      await rem.removePowerup(powerupCode);
+      setTaggedRems(taggedRems.filter(r => r.remId !== remId));
     }
   };
 
